@@ -34,7 +34,7 @@ public class Tree {
         buildTreeFromHTMLDocument(document);
     }
 
-    public void traverseTreeSynchonously() {
+    public void traverseTreeSynchronously() {
         dfs(root);
     }
 

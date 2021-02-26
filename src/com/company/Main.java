@@ -10,6 +10,6 @@ public class Main {
                 + "<body><p>Parsed HTML into a doc.</p></body></html>";
         Document doc = Jsoup.parse(html);
         Tree tree = new Tree(doc);
-        tree.traverseTreeSynchonously();
+        tree.traverseTreeSynchronously();
     }
 }

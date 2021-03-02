@@ -2,8 +2,11 @@ package com.company;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Node;
-
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.ArrayDeque;
+
 
 class TreeNode {
     private String value;
@@ -29,13 +32,48 @@ class TreeNode {
 
 public class Tree {
     private TreeNode root;
+    // USE THIS INSTEAD OF A HARDCODED #
+    private int numberOfThreads;
 
     public Tree (Document document) {
         buildTreeFromHTMLDocument(document);
+        numberOfThreads = Runtime.getRuntime().availableProcessors();
     }
 
     public void traverseTreeSynchronously() {
         dfs(root);
+    }
+
+    public void levelOrderTraversal() {
+        List<List<String>> list = new ArrayList<>();
+
+        if(root == null){
+           return;
+        }
+
+        Queue<TreeNode> queue = new ArrayDeque<>();
+        queue.add(root);
+
+        while(!queue.isEmpty()){
+            int size = queue.size();
+            List<String> temp = new ArrayList<>();
+
+            for(int i = 0 ; i < size ; i++){
+                TreeNode node = queue.poll();
+                temp.add(node.getValue());
+
+                for (TreeNode childNode : node.getChildren()) {
+                    queue.add(childNode);
+                }
+            }
+
+            // temp = list of nodes at current level in tree.
+            if (temp.size() >= numberOfThreads) {
+                // Spin off threads.
+            }
+            list.add(temp);
+        }
+        System.out.println(list);
     }
 
     private void buildTreeFromHTMLDocument(Document document) {

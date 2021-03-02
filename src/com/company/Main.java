@@ -6,10 +6,11 @@ import org.jsoup.nodes.Node;
 
 public class Main {
     public static void main(String[] args) {
-        String html = "<html><head><title>First parse</title></head>"
-                + "<body><p>Parsed HTML into a doc.</p></body></html>";
+        String html = "<html><head></head><body><div><h1></h1><div><ul><li></li><li></li><li></li><li></li></ul></div></div><div><h1></h1><div><ul><li></li><li></li><li></li><li></li></ul></div></div></body></html>";
         Document doc = Jsoup.parse(html);
+
         Tree tree = new Tree(doc);
         tree.traverseTreeSynchronously();
+        tree.levelOrderTraversal();
     }
 }

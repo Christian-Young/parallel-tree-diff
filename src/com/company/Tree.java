@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.ArrayDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 class TreeNode {
@@ -34,21 +35,56 @@ public class Tree {
     private TreeNode root;
     // USE THIS INSTEAD OF A HARDCODED #
     private int numberOfThreads;
+    AtomicInteger pCount;
+
 
     public Tree (Document document) {
         buildTreeFromHTMLDocument(document);
-        numberOfThreads = Runtime.getRuntime().availableProcessors();
+//        numberOfThreads = Runtime.getRuntime().availableProcessors();
+        numberOfThreads = 4;
+        pCount = new AtomicInteger(0);
     }
 
     public void traverseTreeSynchronously() {
+        System.out.println("===Traversing Synchronously===");
+
+        long startTime = System.nanoTime();
         dfs(root);
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime) / 1000;  //divide by 1000000 to get milliseconds.
+        System.out.println("Synchronous execution time: " + duration);
+        System.out.println(pCount.get());
     }
 
-    public void levelOrderTraversal() {
-        List<List<String>> list = new ArrayList<>();
+    public void traverseConcurrently() {
+        System.out.println("===Traversing Synchronously===");
+        System.out.println("Number of threads:" + numberOfThreads);
+        List<TreeNode> listOfNodes = levelOrderTraversal();
+        long startTime = System.nanoTime();
+        for (TreeNode node : listOfNodes) {
+           Thread thread = new Thread(new Runnable(){
+               public void run() {
+                   dfs(node);
+               }
+           });
 
+           thread.start();
+        }
+
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime) / 1000;  //divide by 1000000 to get milliseconds.
+        System.out.println("Concurrent execution time: " + duration);
+        System.out.println(pCount);
+    }
+
+//    private int getTreeHeight(TreeNode node) {
+//        return Math.max(no);
+//        for (TreeNode node : )
+//    }
+
+    public List<TreeNode> levelOrderTraversal() {
         if(root == null){
-           return;
+           return new ArrayList<>();
         }
 
         Queue<TreeNode> queue = new ArrayDeque<>();
@@ -56,24 +92,23 @@ public class Tree {
 
         while(!queue.isEmpty()){
             int size = queue.size();
-            List<String> temp = new ArrayList<>();
+            List<TreeNode> currentLevel = new ArrayList<>();
 
             for(int i = 0 ; i < size ; i++){
                 TreeNode node = queue.poll();
-                temp.add(node.getValue());
+                currentLevel.add(node);
 
                 for (TreeNode childNode : node.getChildren()) {
                     queue.add(childNode);
                 }
             }
 
-            // temp = list of nodes at current level in tree.
-            if (temp.size() >= numberOfThreads) {
-                // Spin off threads.
+            if (currentLevel.size() >= numberOfThreads) {
+                return currentLevel;
             }
-            list.add(temp);
         }
-        System.out.println(list);
+
+        return new ArrayList<>();
     }
 
     private void buildTreeFromHTMLDocument(Document document) {
@@ -91,7 +126,9 @@ public class Tree {
     }
 
     private void dfs(TreeNode node) {
-        System.out.println(node.getValue());
+        if (node.getValue().equals("p")) {
+            pCount.getAndIncrement();
+        }
         for (TreeNode child: node.getChildren()) {
             dfs(child);
         }

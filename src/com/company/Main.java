@@ -4,13 +4,28 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
 public class Main {
     public static void main(String[] args) {
-        String html = "<html><head></head><body><div><h1></h1><div><ul><li></li><li></li><li></li><li></li></ul></div></div><div><h1></h1><div><ul><li></li><li></li><li></li><li></li></ul></div></div></body></html>";
-        Document doc = Jsoup.parse(html);
+        try {
+            File htmlFile = new File("four-core-html.txt");
+            Scanner sc = new Scanner(htmlFile);
+            String data = sc.nextLine();
 
-        Tree tree = new Tree(doc);
-        tree.traverseTreeSynchronously();
-        tree.levelOrderTraversal();
+            Document doc = Jsoup.parse(data);
+
+            Tree tree = new Tree(doc);
+//            tree.traverseConcurrently();
+            tree.traverseTreeSynchronously();
+            sc.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+
+
     }
 }

@@ -33,19 +33,17 @@ class TreeNode {
 
 public class Tree {
     private TreeNode root;
-    // USE THIS INSTEAD OF A HARDCODED #
     private int numberOfThreads;
     AtomicInteger pCount;
 
 
     public Tree (Document document) {
         buildTreeFromHTMLDocument(document);
-//        numberOfThreads = Runtime.getRuntime().availableProcessors();
         numberOfThreads = 4;
         pCount = new AtomicInteger(0);
     }
 
-    public void traverseTreeSynchronously() {
+    public void traverseSynchronously() {
         System.out.println("===Traversing Synchronously===");
 
         long startTime = System.nanoTime();
@@ -57,30 +55,36 @@ public class Tree {
     }
 
     public void traverseConcurrently() {
-        System.out.println("===Traversing Synchronously===");
+        System.out.println("===Traversing Concurrently===");
         System.out.println("Number of threads:" + numberOfThreads);
-        List<TreeNode> listOfNodes = levelOrderTraversal();
         long startTime = System.nanoTime();
-        for (TreeNode node : listOfNodes) {
-           Thread thread = new Thread(new Runnable(){
-               public void run() {
-                   dfs(node);
-               }
-           });
 
-           thread.start();
+        Thread[] threads = new Thread[numberOfThreads];
+        List<TreeNode> listOfNodes = levelOrderTraversal();
+        int i = 0;
+        for (TreeNode node : listOfNodes) {
+            Thread thread = new Thread(new Runnable(){
+                public void run() {
+                    dfs(node);
+                }
+            });
+            threads[i++] = thread;
+            thread.start();
+        }
+
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
         long endTime = System.nanoTime();
-        long duration = (endTime - startTime) / 1000;  //divide by 1000000 to get milliseconds.
+        long duration = (endTime - startTime) / 1000;
         System.out.println("Concurrent execution time: " + duration);
         System.out.println(pCount);
     }
-
-//    private int getTreeHeight(TreeNode node) {
-//        return Math.max(no);
-//        for (TreeNode node : )
-//    }
 
     public List<TreeNode> levelOrderTraversal() {
         if(root == null){

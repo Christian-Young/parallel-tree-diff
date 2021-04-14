@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 class TreeNode {
+    public int ID;
     private String value;
     private ArrayList<TreeNode> children;
 
@@ -29,6 +30,11 @@ class TreeNode {
     public ArrayList<TreeNode> getChildren() {
         return children;
     }
+
+    public int getID()
+    {
+        return ID;
+    }
 }
 
 public class Tree {
@@ -36,6 +42,7 @@ public class Tree {
     // USE THIS INSTEAD OF A HARDCODED #
     private int numberOfThreads;
     AtomicInteger pCount;
+    AtomicInteger idx;
 
 
     public Tree (Document document) {
@@ -43,6 +50,7 @@ public class Tree {
 //        numberOfThreads = Runtime.getRuntime().availableProcessors();
         numberOfThreads = 4;
         pCount = new AtomicInteger(0);
+        idx = new AtomicInteger(0);
     }
 
     public void traverseTreeSynchronously() {
@@ -114,12 +122,14 @@ public class Tree {
     private void buildTreeFromHTMLDocument(Document document) {
         Node docNode = document.getAllElements().first();
         root = new TreeNode(docNode.nodeName());
+        root.ID = idx.getAndIncrement();
         traverseHTML(root, docNode);
     }
 
     private void traverseHTML(TreeNode treeNode, Node documentNode) {
         for (Node childNode : documentNode.childNodes()) {
             TreeNode newTreeNode = new TreeNode(childNode.nodeName());
+            newTreeNode.ID = idx.getAndIncrement();
             treeNode.addChild(newTreeNode);
             traverseHTML(newTreeNode, childNode);
         }

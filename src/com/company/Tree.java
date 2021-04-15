@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.ArrayDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -38,12 +39,22 @@ class TreeNode {
 }
 
 public class Tree {
+    ConcurrentHashMap<Integer, Integer> concurrentHash = new ConcurrentHashMap<>();
     private TreeNode root;
     // USE THIS INSTEAD OF A HARDCODED #
     private int numberOfThreads;
     AtomicInteger pCount;
     AtomicInteger idx;
 
+    public void numberOfChildren(TreeNode node)
+    {
+        if (node == null) return;
+
+        concurrentHash.put(node.getID(), node.getChildren().size());
+
+        for (int i = 0; i < node.getChildren().size(); i++)
+            numberOfChildren(node.getChildren().get(i));
+    }
 
     public Tree (Document document) {
         buildTreeFromHTMLDocument(document);

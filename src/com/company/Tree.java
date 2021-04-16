@@ -46,14 +46,17 @@ public class Tree {
     AtomicInteger pCount;
     AtomicInteger idx;
 
-    public void numberOfChildren(TreeNode node)
+    public int numberOfChildren(TreeNode node)
     {
-        if (node == null) return;
+        if (node == null) return 0;
 
-        concurrentHash.put(node.getID(), node.getChildren().size());
+        int children = 0;
 
-        for (int i = 0; i < node.getChildren().size(); i++)
-            numberOfChildren(node.getChildren().get(i));
+        for (TreeNode child : node.getChildren())
+            children += numberOfChildren(child);
+
+        concurrentHash.put(node.getID(), children);
+        return 1 + children;
     }
 
     public Tree (Document document) {

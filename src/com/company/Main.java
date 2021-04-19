@@ -5,5 +5,8 @@ public class Main {
         TraversalTest traversalTest = new TraversalTest("four-core-html.txt");
         traversalTest.testSynchronous();
         traversalTest.testConcurrent();
+
+        HashMapTreeTest mapTreeTest = new HashMapTreeTest("four-core-html.txt");
+        mapTreeTest.fillChildMapConcurrently();
     }
 }

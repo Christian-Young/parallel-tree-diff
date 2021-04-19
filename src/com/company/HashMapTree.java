@@ -2,54 +2,61 @@ package com.company;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Node;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
-import java.util.ArrayDeque;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
-class TreeNode {
+class MapTreeNode {
+    public int ID;
     private String value;
-    private ArrayList<TreeNode> children;
+    private ArrayList<MapTreeNode> children;
 
-    public TreeNode(String value) {
+    public MapTreeNode(String value) {
         this.value = value;
-        children = new ArrayList<TreeNode>();
+        children = new ArrayList<MapTreeNode>();
     }
 
     public String getValue() {
         return value;
     }
 
-    public void addChild(TreeNode child) {
+    public void addChild(MapTreeNode child) {
         children.add(child);
     }
 
-    public ArrayList<TreeNode> getChildren() {
+    public ArrayList<MapTreeNode> getChildren() {
         return children;
+    }
+
+    public int getID()
+    {
+        return ID;
     }
 }
 
-public class Tree {
-    private TreeNode root;
+public class HashMapTree {
+    ConcurrentHashMap<Integer, Integer> concurrentHash = new ConcurrentHashMap<>();
+    private MapTreeNode root;
     private int numberOfThreads;
     AtomicInteger pCount;
     AtomicInteger idx;
 
-    public int numberOfChildren(TreeNode node)
+    public int numberOfChildren(MapTreeNode node)
     {
         if (node == null) return 0;
 
         int children = 0;
 
-        for (TreeNode child : node.getChildren())
+        for (MapTreeNode child : node.getChildren())
             children += numberOfChildren(child);
 
+        concurrentHash.put(node.getID(), children);
         return 1 + children;
     }
 
-    public Tree (Document document) {
+    public HashMapTree (Document document) {
         numberOfThreads = 4;
         pCount = new AtomicInteger(0);
         idx = new AtomicInteger(0);
@@ -64,7 +71,51 @@ public class Tree {
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000;  //divide by 1000000 to get milliseconds.
         System.out.println("Synchronous execution time: " + duration);
-        System.out.println("Number of p tags found: " + pCount.get() + " (this metric is used to prove that concurrent and synchronous implementations reach the same amount of nodes)");
+        System.out.println(pCount.get());
+    }
+
+    public void fillChildMapConcurrently() {
+        System.out.println("===Filling Child Map Concurrently===");
+
+        Thread[] threads = new Thread[numberOfThreads];
+        List<MapTreeNode> listOfNodes = levelOrderTraversal();
+        int i = 0;
+        for (MapTreeNode node : listOfNodes) {
+            Thread thread = new Thread(new Runnable(){
+                public void run() {
+                    numberOfChildren(node);
+                }
+            });
+            threads[i++] = thread;
+            thread.start();
+        }
+
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        printTopNNodes(4);
+    }
+
+    private void printTopNNodes(int n) {
+        PriorityQueue<Integer> pq = new PriorityQueue<>();
+
+        int i = 0;
+        for (Integer key : concurrentHash.keySet()) {
+            int value = concurrentHash.get(key);
+            if (i++ < n) {
+                pq.add(value);
+            } else {
+                pq.add(value);
+                if (pq.size() > n) pq.poll();
+            }
+        }
+
+        System.out.println("Most number of children: " + pq);
     }
 
     public void traverseConcurrently() {
@@ -73,9 +124,9 @@ public class Tree {
         long startTime = System.nanoTime();
 
         Thread[] threads = new Thread[numberOfThreads];
-        List<TreeNode> listOfNodes = levelOrderTraversal();
+        List<MapTreeNode> listOfNodes = levelOrderTraversal();
         int i = 0;
-        for (TreeNode node : listOfNodes) {
+        for (MapTreeNode node : listOfNodes) {
             Thread thread = new Thread(new Runnable(){
                 public void run() {
                     dfs(node);
@@ -96,26 +147,26 @@ public class Tree {
         long endTime = System.nanoTime();
         long duration = (endTime - startTime) / 1000;
         System.out.println("Concurrent execution time: " + duration);
-        System.out.println("Number of p tags found: " + pCount.get() + " (this metric is used to prove that concurrent and synchronous implementations reach the same amount of nodes)");
+        System.out.println(pCount);
     }
 
-    public List<TreeNode> levelOrderTraversal() {
+    public List<MapTreeNode> levelOrderTraversal() {
         if(root == null){
-           return new ArrayList<>();
+            return new ArrayList<>();
         }
 
-        Queue<TreeNode> queue = new ArrayDeque<>();
+        Queue<MapTreeNode> queue = new ArrayDeque<>();
         queue.add(root);
 
         while(!queue.isEmpty()){
             int size = queue.size();
-            List<TreeNode> currentLevel = new ArrayList<>();
+            List<MapTreeNode> currentLevel = new ArrayList<>();
 
             for(int i = 0 ; i < size ; i++){
-                TreeNode node = queue.poll();
+                MapTreeNode node = queue.poll();
                 currentLevel.add(node);
 
-                for (TreeNode childNode : node.getChildren()) {
+                for (MapTreeNode childNode : node.getChildren()) {
                     queue.add(childNode);
                 }
             }
@@ -130,23 +181,25 @@ public class Tree {
 
     private void buildTreeFromHTMLDocument(Document document) {
         Node docNode = document.getAllElements().first();
-        root = new TreeNode(docNode.nodeName());
+        root = new MapTreeNode(docNode.nodeName());
+        root.ID = idx.getAndIncrement();
         traverseHTML(root, docNode);
     }
 
-    private void traverseHTML(TreeNode treeNode, Node documentNode) {
+    private void traverseHTML(MapTreeNode treeNode, Node documentNode) {
         for (Node childNode : documentNode.childNodes()) {
-            TreeNode newTreeNode = new TreeNode(childNode.nodeName());
+            MapTreeNode newTreeNode = new MapTreeNode(childNode.nodeName());
+            newTreeNode.ID = idx.getAndIncrement();
             treeNode.addChild(newTreeNode);
             traverseHTML(newTreeNode, childNode);
         }
     }
 
-    private void dfs(TreeNode node) {
+    private void dfs(MapTreeNode node) {
         if (node.getValue().equals("p")) {
             pCount.getAndIncrement();
         }
-        for (TreeNode child: node.getChildren()) {
+        for (MapTreeNode child: node.getChildren()) {
             dfs(child);
         }
     }

@@ -6,10 +6,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.ArrayDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
 class TreeNode {
+    public int ID;
     private String value;
     private ArrayList<TreeNode> children;
 
@@ -29,18 +31,38 @@ class TreeNode {
     public ArrayList<TreeNode> getChildren() {
         return children;
     }
+
+    public int getID()
+    {
+        return ID;
+    }
 }
 
 public class Tree {
+    ConcurrentHashMap<Integer, Integer> concurrentHash = new ConcurrentHashMap<>();
     private TreeNode root;
     private int numberOfThreads;
     AtomicInteger pCount;
+    AtomicInteger idx;
 
+    public int numberOfChildren(TreeNode node)
+    {
+        if (node == null) return 0;
+
+        int children = 0;
+
+        for (TreeNode child : node.getChildren())
+            children += numberOfChildren(child);
+
+        concurrentHash.put(node.getID(), children);
+        return 1 + children;
+    }
 
     public Tree (Document document) {
         buildTreeFromHTMLDocument(document);
         numberOfThreads = 4;
         pCount = new AtomicInteger(0);
+        idx = new AtomicInteger(0);
     }
 
     public void traverseSynchronously() {
@@ -118,12 +140,14 @@ public class Tree {
     private void buildTreeFromHTMLDocument(Document document) {
         Node docNode = document.getAllElements().first();
         root = new TreeNode(docNode.nodeName());
+        root.ID = idx.getAndIncrement();
         traverseHTML(root, docNode);
     }
 
     private void traverseHTML(TreeNode treeNode, Node documentNode) {
         for (Node childNode : documentNode.childNodes()) {
             TreeNode newTreeNode = new TreeNode(childNode.nodeName());
+            newTreeNode.ID = idx.getAndIncrement();
             treeNode.addChild(newTreeNode);
             traverseHTML(newTreeNode, childNode);
         }
